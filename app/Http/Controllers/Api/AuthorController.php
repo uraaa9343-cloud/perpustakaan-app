@@ -10,17 +10,16 @@ class AuthorController extends Controller
 {
     public function index()
     {
-        return response()->json(Author::with('books')->get());
+        return response()->json(Author::all());
     }
 
     public function store(Request $request)
     {
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:authors,email',
+            'email' => 'required|email|unique:authors',
             'bio' => 'nullable|string',
         ]);
-
         return response()->json(Author::create($data), 201);
     }
 
@@ -32,22 +31,17 @@ class AuthorController extends Controller
     public function update(Request $request, Author $author)
     {
         $data = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'email' => 'sometimes|required|email|unique:authors,email,' . $author->id,
+            'name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:authors,email,' . $author->id,
             'bio' => 'nullable|string',
         ]);
-
         $author->update($data);
-
         return response()->json($author);
     }
 
     public function destroy(Author $author)
     {
         $author->delete();
-
-        return response()->json([
-            'message' => 'Author berhasil dihapus'
-        ]);
+        return response()->json(['message' => 'Penulis dan buku terkait berhasil dihapus']);
     }
 }
