@@ -2,16 +2,55 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\Author;
+use App\Models\Category;
 use App\Http\Controllers\Controller;
 use App\Models\Book;
 use Illuminate\Http\Request;
 
 class BookController extends Controller
 {
-    public function index()
-    {
-        return response()->json(Book::with('author', 'categories')->get());
+    public function index(Request $request)
+{
+    $query = Book::with('author', 'categories');
+
+    // Cari berdasarkan judul atau nama penulis
+    if ($request->filled('search')) {
+        $s = $request->search;
+        $query->where(function ($q) use ($s) {
+            $q->where('title', 'like', "%$s%")
+              ->orWhereHas('author', fn ($a) => $a->where('name', 'like', "%$s%"));
+        });
     }
+
+    // Filter kategori
+    if ($request->filled('category_id')) {
+        $query->whereHas('categories', fn ($q) => $q->where('categories.id', $request->category_id));
+    }
+
+    // Filter stok tersedia (stok > 0)
+    if ($request->boolean('in_stock')) {
+        $query->where('stock', '>', 0);
+    }
+
+    return response()->json($query->get());
+}
+
+// Buku dengan stok menipis (< 5)
+public function lowStock()
+{
+    return response()->json(Book::with('author')->where('stock', '<', 5)->get());
+}
+
+// Statistik
+public function stats()
+{
+    return response()->json([
+        'total_books' => Book::count(),
+        'total_authors' => Author::count(),
+        'total_categories' => Category::count(),
+    ]);
+}
 
     public function store(Request $request)
     {
